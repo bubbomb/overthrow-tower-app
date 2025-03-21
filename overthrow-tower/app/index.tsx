@@ -1,5 +1,11 @@
 import React, { useRef, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function Index() {
   const [cubes, setCubes] = useState<{ id: number; color: string }[]>([]);
@@ -18,12 +24,22 @@ export default function Index() {
   const addCube = (color: string) => {
     const newCube = { id: cubeId.current++, color }; // Use and increment the unique counter
 
-    // Randomly decide if the cube should be sorted (75% chance)
-    if (Math.random() < 0.75) {
-      sortCube(newCube);
-    } else {
-      setCubes((prevCubes) => [...prevCubes, newCube]);
-    }
+    // Add the new cube to the tower
+    setCubes((prevCubes) => {
+      const updatedCubes = [...prevCubes, newCube];
+
+      // Iterate over all cubes in the tower and randomly decide if they fall into the trays
+      const remainingCubes = updatedCubes.filter((cube) => {
+        if (Math.random() < 0.25) {
+          // 25% chance of leaving the tower
+          sortCube(cube); // Sort the cube into one of the trays
+          return false; // Remove the cube from the tower
+        }
+        return true; // Keep the cube in the tower
+      });
+
+      return remainingCubes;
+    });
   };
 
   const sortCube = (cube: { id: number; color: string }) => {
@@ -98,22 +114,26 @@ export default function Index() {
       </View>
       <View style={styles.slots}>
         <View style={styles.slot}>
-          {Object.entries(getColorCounts(slot1)).map(([color, count]) => (
-            <Text key={color} style={[styles.slotText, { color }]}>
-              {`${
-                colors.find((c) => c.hex === color)?.name || color
-              }: ${count}`}
-            </Text>
-          ))}
+          <ScrollView>
+            {Object.entries(getColorCounts(slot1)).map(([color, count]) => (
+              <Text key={color} style={[styles.slotText, { color }]}>
+                {`${
+                  colors.find((c) => c.hex === color)?.name || color
+                }: ${count}`}
+              </Text>
+            ))}
+          </ScrollView>
         </View>
         <View style={styles.slot}>
-          {Object.entries(getColorCounts(slot2)).map(([color, count]) => (
-            <Text key={color} style={[styles.slotText, { color }]}>
-              {`${
-                colors.find((c) => c.hex === color)?.name || color
-              }: ${count}`}
-            </Text>
-          ))}
+          <ScrollView>
+            {Object.entries(getColorCounts(slot2)).map(([color, count]) => (
+              <Text key={color} style={[styles.slotText, { color }]}>
+                {`${
+                  colors.find((c) => c.hex === color)?.name || color
+                }: ${count}`}
+              </Text>
+            ))}
+          </ScrollView>
         </View>
       </View>
     </View>
@@ -230,7 +250,7 @@ const styles = StyleSheet.create({
   },
   slot: {
     width: "45%",
-    height: 100,
+    height: 150, // Increased height from 100 to 150
     borderWidth: 2,
     borderColor: "#000",
     borderRadius: 10,
