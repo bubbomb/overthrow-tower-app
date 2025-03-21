@@ -1,20 +1,18 @@
+import React, { useRef, useState } from "react";
 import {
-  Animated,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useRef, useState } from "react";
 
 export default function Index() {
-  const [cubes, setCubes] = useState<{ id: number; color: string }[]>([]);
+  const [cubes, setCubes] = useState<
+    { id: number; color: string; x: number; y: number }[]
+  >([]);
   const [slot1, setSlot1] = useState<{ id: number; color: string }[]>([]);
   const [slot2, setSlot2] = useState<{ id: number; color: string }[]>([]);
-  const [animatedCubes, setAnimatedCubes] = useState<
-    { id: number; color: string; animation: Animated.ValueXY }[]
-  >([]);
   const cubeId = useRef(1); // Unique counter for cube IDs
   const towerPosition = useRef({ x: 0, y: 0 }); // Tower's position on the screen
 
@@ -28,51 +26,44 @@ export default function Index() {
 
   const addCube = (color: string) => {
     const id = cubeId.current++;
-    const towerWidth = 120; // Width of the tower
-    const towerHeight = 400; // Height of the tower
-    const cubeSize = 25; // Smaller cube size
+    const newCube = { id, color };
 
-    const animation = new Animated.ValueXY({
-      x: 0,
-      y: -cubeSize, // Start at the top of the screen
-    });
-    const newCube = { id, color, animation };
+    // Decide whether to sort the new cube into a tray or keep it in the tower
+    if (Math.random() < 0.75) {
+      // 75% chance to sort into a tray
+      sortCube(newCube);
+    } else {
+      // 25% chance to stay in the tower
+      setCubes((prevCubes) => [
+        ...prevCubes,
+        { ...newCube, x: getRandomX(), y: getRandomY() },
+      ]);
+    }
 
-    setAnimatedCubes((prev) => [...prev, newCube]);
-
-    Animated.timing(animation, {
-      toValue: {
-        x:
-          Math.random() * (towerWidth - cubeSize) - (towerWidth - cubeSize) / 2, // Random horizontal position
-        y: towerHeight - cubeSize, // Drop to the bottom of the tower
-      },
-      duration: 500, // Duration of the drop
-      useNativeDriver: true,
-    }).start(() => {
-      // After animation, decide whether to sort the new cube into a tray or keep it in the tower
-      if (Math.random() < 0.75) {
-        // 75% chance to sort into a tray
-        sortCube({ id, color });
-      } else {
-        // 25% chance to stay in the tower
-        setCubes((prevCubes) => [...prevCubes, { id, color }]);
-      }
-
-      // Iterate over existing cubes in the tower and randomly decide if they fall into the trays
-      setCubes((prevCubes) => {
-        const remainingCubes = prevCubes.filter((cube) => {
-          if (Math.random() < 0.25) {
-            // 25% chance to fall into a tray
-            sortCube(cube);
-            return false; // Remove the cube from the tower
-          }
-          return true; // Keep the cube in the tower
-        });
-        return remainingCubes;
+    // Iterate over existing cubes in the tower and randomly decide if they fall into the trays
+    setCubes((prevCubes) => {
+      const remainingCubes = prevCubes.filter((cube) => {
+        if (Math.random() < 0.25) {
+          // 25% chance to fall into a tray
+          sortCube(cube);
+          return false; // Remove the cube from the tower
+        }
+        return true; // Keep the cube in the tower
       });
-
-      setAnimatedCubes((prev) => prev.filter((cube) => cube.id !== id));
+      return remainingCubes;
     });
+  };
+
+  const getRandomX = () => {
+    const towerWidth = 120; // Width of the tower
+    const cubeSize = 25; // Size of the cube
+    return Math.random() * (towerWidth - cubeSize); // Random x position within the tower
+  };
+
+  const getRandomY = () => {
+    const towerHeight = 400; // Height of the tower
+    const cubeSize = 25; // Size of the cube
+    return Math.random() * (towerHeight - cubeSize); // Random y position within the tower
   };
 
   const sortCube = (cube: { id: number; color: string }) => {
@@ -105,90 +96,63 @@ export default function Index() {
         ))}
       </View>
       <View
-        style={styles.tower}
+        style={styles.towerContainer}
         onLayout={(event) => {
           event.target.measure((x, y, width, height, pageX, pageY) => {
             towerPosition.current = { x: pageX, y: pageY };
           });
         }}
       >
-        {animatedCubes.map((cube) => (
-          <Animated.View
-            key={cube.id}
-            style={[
-              styles.cubeContainer,
-              {
-                transform: [
-                  { translateX: cube.animation.x },
-                  { translateY: cube.animation.y },
-                ],
-              },
-            ]}
-          >
-            <View
+        <View style={styles.battlement}>
+          {Array.from({ length: 5 }).map((_, index) => (
+            <View key={index} style={styles.battlementBlock} />
+          ))}
+        </View>
+        <View style={styles.tower}>
+          {cubes.map((cube) => (
+            <TouchableOpacity
+              key={cube.id}
               style={[
-                styles.cubeFace,
-                styles.cubeTop,
-                { backgroundColor: cube.color },
+                styles.cubeContainer,
+                { left: cube.x, top: cube.y }, // Position the cube randomly
               ]}
-            />
-            <View
-              style={[
-                styles.cubeFace,
-                styles.cubeFront,
-                { backgroundColor: cube.color },
-              ]}
+              onPress={() => {
+                setCubes((prevCubes) =>
+                  prevCubes.filter((c) => c.id !== cube.id)
+                );
+                sortCube(cube);
+              }}
             >
-              <Text style={styles.cubeText}>{cube.id}</Text>
-            </View>
-            <View
-              style={[
-                styles.cubeFace,
-                styles.cubeSide,
-                { backgroundColor: darkenColor(cube.color, 0.2) },
-              ]}
-            />
-          </Animated.View>
-        ))}
-        {cubes.map((cube) => (
-          <TouchableOpacity
-            key={cube.id}
-            style={styles.cubeContainer}
-            onPress={() => {
-              setCubes((prevCubes) =>
-                prevCubes.filter((c) => c.id !== cube.id)
-              );
-              sortCube(cube);
-            }}
-          >
-            <View
-              style={[
-                styles.cubeFace,
-                styles.cubeTop,
-                { backgroundColor: cube.color },
-              ]}
-            />
-            <View
-              style={[
-                styles.cubeFace,
-                styles.cubeFront,
-                { backgroundColor: cube.color },
-              ]}
-            >
-              <Text style={styles.cubeText}>{cube.id}</Text>
-            </View>
-            <View
-              style={[
-                styles.cubeFace,
-                styles.cubeSide,
-                { backgroundColor: darkenColor(cube.color, 0.2) },
-              ]}
-            />
-          </TouchableOpacity>
-        ))}
+              <View
+                style={[
+                  styles.cubeFace,
+                  styles.cubeTop,
+                  { backgroundColor: cube.color },
+                ]}
+              />
+              <View
+                style={[
+                  styles.cubeFace,
+                  styles.cubeFront,
+                  { backgroundColor: cube.color },
+                ]}
+              >
+                <Text style={styles.cubeText}>{cube.id}</Text>
+              </View>
+              <View
+                style={[
+                  styles.cubeFace,
+                  styles.cubeSide,
+                  { backgroundColor: darkenColor(cube.color, 0.2) },
+                ]}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
       <View style={styles.slots}>
         <View style={styles.slot}>
+          <Text style={styles.slotLabel}>To the Board</Text>
           <ScrollView>
             {Object.entries(getColorCounts(slot1)).map(([color, count]) => (
               <Text key={color} style={[styles.slotText, { color }]}>
@@ -200,6 +164,7 @@ export default function Index() {
           </ScrollView>
         </View>
         <View style={styles.slot}>
+          <Text style={styles.slotLabel}>To Cards</Text>
           <ScrollView>
             {Object.entries(getColorCounts(slot2)).map(([color, count]) => (
               <Text key={color} style={[styles.slotText, { color }]}>
@@ -228,6 +193,7 @@ const styles = StyleSheet.create({
     justifyContent: "center", // Center the buttons horizontally
     flexWrap: "wrap", // Allow buttons to wrap into multiple rows
     marginBottom: 20,
+    marginTop: 30, // Push the buttons down to avoid the notch
     paddingHorizontal: 10, // Add padding to prevent buttons from touching the edges
   },
   colorButton: {
@@ -249,6 +215,24 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 14,
   },
+  towerContainer: {
+    alignItems: "center",
+  },
+  battlement: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: 140, // Slightly wider than the tower
+    height: 20, // Height of the battlement
+    backgroundColor: "#ccc",
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+  },
+  battlementBlock: {
+    width: 20, // Width of each block
+    height: 20, // Height of each block
+    backgroundColor: "#000",
+    marginHorizontal: 2,
+  },
   tower: {
     width: 120,
     height: 400,
@@ -256,8 +240,9 @@ const styles = StyleSheet.create({
     borderColor: "#000",
     justifyContent: "flex-end",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 10,
+    backgroundColor: "#ccc", // Castle-like color
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -268,7 +253,7 @@ const styles = StyleSheet.create({
     width: 25, // Smaller cube size
     height: 25, // Smaller cube size
     marginBottom: 5, // Add spacing between cubes
-    position: "absolute", // Allow cubes to be placed anywhere in the tower
+    position: "absolute", // Position the cube absolutely within the tower
   },
   cubeFace: {
     position: "absolute",
@@ -324,7 +309,7 @@ const styles = StyleSheet.create({
   },
   slot: {
     width: "45%",
-    height: 150, // Increased height from 100 to 150
+    height: 175, // Increased height from 150 to 200
     borderWidth: 2,
     borderColor: "#000",
     borderRadius: 10,
@@ -332,6 +317,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
     padding: 5,
+  },
+  slotLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 5,
+    textAlign: "center",
   },
   slotText: {
     fontSize: 16,
