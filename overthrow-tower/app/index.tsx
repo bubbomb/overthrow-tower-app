@@ -1,3 +1,4 @@
+import Cube from "@/components/cube";
 import React, { useRef, useState } from "react";
 import {
   ScrollView,
@@ -28,12 +29,9 @@ export default function Index() {
     const id = cubeId.current++;
     const newCube = { id, color };
 
-    // Decide whether to sort the new cube into a tray or keep it in the tower
-    if (Math.random() < 0.75) {
-      // 75% chance to sort into a tray
+    if (Math.random() < 0.25) {
       sortCube(newCube);
     } else {
-      // 25% chance to stay in the tower
       setCubes((prevCubes) => [
         ...prevCubes,
         { ...newCube, x: getRandomX(), y: getRandomY() },
@@ -98,7 +96,7 @@ export default function Index() {
       <View
         style={styles.towerContainer}
         onLayout={(event) => {
-          event.target.measure((x, y, width, height, pageX, pageY) => {
+          event.target.measure(( pageX, pageY) => {
             towerPosition.current = { x: pageX, y: pageY };
           });
         }}
@@ -110,50 +108,14 @@ export default function Index() {
         </View>
         <View style={styles.tower}>
           {cubes.map((cube) => (
-            <TouchableOpacity
-              key={cube.id}
-              style={[
-                styles.cubeContainer,
-                { left: cube.x, top: cube.y }, // Position the cube randomly
-              ]}
-              onPress={() => {
-                setCubes((prevCubes) =>
-                  prevCubes.filter((c) => c.id !== cube.id)
-                );
-                sortCube(cube);
-              }}
-            >
-              <View
-                style={[
-                  styles.cubeFace,
-                  styles.cubeTop,
-                  { backgroundColor: cube.color },
-                ]}
-              />
-              <View
-                style={[
-                  styles.cubeFace,
-                  styles.cubeFront,
-                  { backgroundColor: cube.color },
-                ]}
-              >
-                <Text style={styles.cubeText}>{cube.id}</Text>
-              </View>
-              <View
-                style={[
-                  styles.cubeFace,
-                  styles.cubeSide,
-                  { backgroundColor: darkenColor(cube.color, 0.2) },
-                ]}
-              />
-            </TouchableOpacity>
+            <Cube key={cube.id} cube={cube} />
           ))}
         </View>
       </View>
       <View style={styles.slots}>
         <View style={styles.slot}>
           <Text style={styles.slotLabel}>To the Board</Text>
-          <ScrollView>
+          <View>
             {Object.entries(getColorCounts(slot1)).map(([color, count]) => (
               <Text key={color} style={[styles.slotText, { color }]}>
                 {`${
@@ -161,11 +123,11 @@ export default function Index() {
                 }: ${count}`}
               </Text>
             ))}
-          </ScrollView>
+          </View>
         </View>
         <View style={styles.slot}>
           <Text style={styles.slotLabel}>To Cards</Text>
-          <ScrollView>
+          <View>
             {Object.entries(getColorCounts(slot2)).map(([color, count]) => (
               <Text key={color} style={[styles.slotText, { color }]}>
                 {`${
@@ -173,9 +135,9 @@ export default function Index() {
                 }: ${count}`}
               </Text>
             ))}
-          </ScrollView>
-        </View>
+           </View>
       </View>
+    </View>
     </View>
   );
 }
@@ -249,41 +211,6 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  cubeContainer: {
-    width: 25, // Smaller cube size
-    height: 25, // Smaller cube size
-    marginBottom: 5, // Add spacing between cubes
-    position: "absolute", // Position the cube absolutely within the tower
-  },
-  cubeFace: {
-    position: "absolute",
-    borderRadius: 5,
-  },
-  cubeTop: {
-    width: 25, // Match the new cube size
-    height: 25, // Match the new cube size
-    top: 0,
-    left: 0,
-    zIndex: 2,
-  },
-  cubeFront: {
-    width: 25, // Match the new cube size
-    height: 25, // Match the new cube size
-    top: 0,
-    left: 0,
-    zIndex: 1,
-  },
-  cubeSide: {
-    width: 25, // Match the new cube size
-    height: 25, // Match the new cube size
-    top: 0,
-    left: 0,
-    zIndex: 0,
-  },
-  cubeText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
   dropButton: {
     backgroundColor: "#007BFF",
     paddingVertical: 10,
@@ -330,12 +257,3 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
 });
-
-// Utility function to darken a color
-function darkenColor(color: string, amount: number): string {
-  const num = parseInt(color.replace("#", ""), 16);
-  const r = Math.max(0, (num >> 16) - amount * 255);
-  const g = Math.max(0, ((num >> 8) & 0x00ff) - amount * 255);
-  const b = Math.max(0, (num & 0x0000ff) - amount * 255);
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-}
