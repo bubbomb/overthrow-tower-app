@@ -1,4 +1,5 @@
-import Cube from "@/components/cube";
+import Cube from "@/components/Cube";
+import Slot from "@/components/Slot";
 import React, { useRef, useState } from "react";
 import {
   ScrollView,
@@ -14,8 +15,8 @@ export default function Index() {
   >([]);
   const [slot1, setSlot1] = useState<{ id: number; color: string }[]>([]);
   const [slot2, setSlot2] = useState<{ id: number; color: string }[]>([]);
-  const cubeId = useRef(1); // Unique counter for cube IDs
-  const towerPosition = useRef({ x: 0, y: 0 }); // Tower's position on the screen
+  const cubeId = useRef(1);
+  const towerPosition = useRef({ x: 0, y: 0 });
 
   const colors = [
     { hex: "#4CAF50", name: "Green" },
@@ -113,31 +114,9 @@ export default function Index() {
         </View>
       </View>
       <View style={styles.slots}>
-        <View style={styles.slot}>
-          <Text style={styles.slotLabel}>To the Board</Text>
-          <View>
-            {Object.entries(getColorCounts(slot1)).map(([color, count]) => (
-              <Text key={color} style={[styles.slotText, { color }]}>
-                {`${
-                  colors.find((c) => c.hex === color)?.name || color
-                }: ${count}`}
-              </Text>
-            ))}
-          </View>
-        </View>
-        <View style={styles.slot}>
-          <Text style={styles.slotLabel}>To Cards</Text>
-          <View>
-            {Object.entries(getColorCounts(slot2)).map(([color, count]) => (
-              <Text key={color} style={[styles.slotText, { color }]}>
-                {`${
-                  colors.find((c) => c.hex === color)?.name || color
-                }: ${count}`}
-              </Text>
-            ))}
-           </View>
+        <Slot name="To the board" slotCounts={() => getColorCounts(slot1)} colors={colors}/>
+        <Slot name="To Cards" slotCounts={() => getColorCounts(slot2)} colors={colors}/>
       </View>
-    </View>
     </View>
   );
 }
@@ -233,27 +212,5 @@ const styles = StyleSheet.create({
     marginTop: 20,
     width: "100%",
     paddingHorizontal: 20,
-  },
-  slot: {
-    width: "45%",
-    height: 175, // Increased height from 150 to 200
-    borderWidth: 2,
-    borderColor: "#000",
-    borderRadius: 10,
-    backgroundColor: "#e0e0e0",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    padding: 5,
-  },
-  slotLabel: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
-    textAlign: "center",
-  },
-  slotText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
   },
 });
